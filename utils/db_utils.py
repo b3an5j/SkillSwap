@@ -125,26 +125,29 @@ def delete_post(data):
         return False
 
 
-def get_post_by_id(id):
-    try:
-        conn = get_db()
-        cur = conn.cursor()
+def get_post_by_id(post_id):
+    conn = get_db()
+    cur = conn.cursor()
 
-        cur.execute("""
-            SELECT p.title, p.description, pc.category, p.is_open, u.username
-            FROM posts p
-            JOIN post_category pc ON pc.id = p.category_id
-            JOIN users u ON p.owner = u.id
-            WHERE p.id = :id
-        """, { "id": id })
-        row = cur.fetchone()
+    cur.execute("""
+        SELECT posts.id,
+               posts.title,
+               posts.description,
+               posts.category_id,
+               post_category.category,
+               posts.owner,
+               users.username,
+               users.location
+        FROM posts
+        JOIN post_category ON post_category.id = posts.category_id
+        JOIN users ON users.id = posts.owner
+        WHERE posts.id = :post_id
+    """, {"post_id": post_id})
 
-        return dict(row)
-    except:
-        if conn:
-            conn.rollback()
-            conn.close()
-        return []
+    row = cur.fetchone()
+    conn.close()
+
+    return dict(row) if row else None
 
 
 def get_post_categories():
@@ -330,6 +333,37 @@ def send_offer(data):
         conn.close()
         return True
     except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
+
+
+def delete_offer(post_send, post_receive, uid):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            DELETE FROM trade_offers
+            WHERE post_send = :post_send
+              AND post_receive = :post_receive
+              AND post_send IN (
+                  SELECT id FROM posts WHERE owner = :uid
+              )
+        """, {
+            "post_send": post_send,
+            "post_receive": post_receive,
+            "uid": uid
+        })
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+
+    except Exception as e:
+        print("DELETE OFFER ERROR:", e)
         if conn:
             conn.rollback()
             conn.close()

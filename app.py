@@ -229,20 +229,33 @@ def offer():
     raw_sent = get_sent_offers(uid)
     raw_received = get_received_offers(uid)
 
-    # Enrich sent offers
+    # Helper to enrich a post with full info
+    def enrich(post_id):
+        post = get_post_by_id(post_id)  # MUST return title, description, category, location, owner
+        return {
+            "id": post_id,
+            "title": post["title"],
+            "description": post["description"],
+            "category": post["category"],
+            "location": post["location"],
+            "owner": post["owner"],
+            "username": post["username"]  # if your query includes username
+        }
+
+    # ENRICH SENT OFFERS
     sent = []
     for o in raw_sent:
         sent.append({
-            "post_send": get_post_by_id(o["post_send"]),
-            "post_receive": get_post_by_id(o["post_receive"])
+            "post_send": enrich(o["post_send"]),
+            "post_receive": enrich(o["post_receive"])
         })
 
-    # Enrich received offers
+    # ENRICH RECEIVED OFFERS
     received = []
     for o in raw_received:
         received.append({
-            "post_send": get_post_by_id(o["post_send"]),
-            "post_receive": get_post_by_id(o["post_receive"])
+            "post_send": enrich(o["post_send"]),
+            "post_receive": enrich(o["post_receive"])
         })
 
     tab = request.args.get("tab", "sent")
@@ -265,6 +278,21 @@ def send_offer_route():
     }
 
     send_offer(data)
+
+    return redirect("/offer?tab=sent")
+
+
+@app.route("/offer/delete", methods=["POST"])
+def offer_delete_route():
+    print("DELETE FORM RAW:", request.form)
+
+    if "uid" not in session:
+        return redirect("/login")
+
+    post_send = int(request.form["post_send"])
+    post_receive = int(request.form["post_receive"])
+
+    delete_offer(post_send, post_receive, session["uid"])
 
     return redirect("/offer?tab=sent")
 

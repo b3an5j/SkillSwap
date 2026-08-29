@@ -58,12 +58,21 @@
                 {% for offer in sent %}
                     <div class="border p-4 rounded-lg">
                         <p><strong>You receive:</strong> {{ offer.post_send.title }}</p>
-                        <p><strong>I receive:</strong> {{ offer.post_receive.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_send.description }}</p>
+                        <p class="text-sm text-gray-500">Category: {{ offer.post_send.category }}</p>
+                        <p class="text-sm text-gray-500">Location: {{ offer.post_send.location }}</p>
 
-                        <form action="/offer/delete/{{ offer.post_send.id }}/{{ offer.post_receive.id }}" method="POST">
-                            <button class="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                                Delete Offer
-                            </button>
+                        <hr class="my-3">
+
+                        <p><strong>I receive:</strong> {{ offer.post_receive.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_receive.description }}</p>
+                        <p class="text-sm text-gray-500">Category: {{ offer.post_receive.category }}</p>
+                        <p class="text-sm text-gray-500">Location: {{ offer.post_receive.location }}</p>
+
+                        <form action="/offer/delete" method="POST">
+                            <input type="hidden" name="post_send" value="{{ offer.post_send.id }}">
+                            <input type="hidden" name="post_receive" value="{{ offer.post_receive.id }}">
+                            <button class="bg-red-600 text-white px-4 py-2 rounded">Delete</button>
                         </form>
                     </div>
                 {% endfor %}
@@ -80,13 +89,18 @@
             <div class="space-y-4">
                 {% for offer in received %}
                     <div class="border p-4 rounded-lg">
-                        <p><strong>From:</strong> {{ offer.sender_name }}</p>
-                        <p><strong>Post:</strong> {{ offer.title }}</p>
-                        <p><strong>Message:</strong> {{ offer.message }}</p>
-                        <p><strong>Status:</strong> {{ offer.status }}</p>
+                        <p><strong>I receive:</strong> {{ offer.post_send.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_send.description }}</p>
+                        <p class="text-sm text-gray-500">Category: {{ offer.post_send.category }}</p>
+                        <p class="text-sm text-gray-500">Location: {{ offer.post_send.location }}</p>
 
+                        <hr class="my-3">
 
-                        <!-- ACCEPT + REJECT BUTTONS -->
+                        <p><strong>You receive:</strong> {{ offer.post_receive.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_receive.description }}</p>
+                        <p class="text-sm text-gray-500">Category: {{ offer.post_receive.category }}</p>
+                        <p class="text-sm text-gray-500">Location: {{ offer.post_receive.location }}</p>
+
                         <div class="mt-3 flex space-x-3">
                             <form action="/offer/accept/{{ offer.post_send.id }}/{{ offer.post_receive.id }}" method="POST">
                                 <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
