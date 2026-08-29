@@ -51,9 +51,18 @@
             <div class="bg-white p-4 rounded-lg shadow">
                 <h3 class="text-xl font-bold">{{ post["title"] }}</h3>
                 <p class="text-gray-700">{{ post["description"] }}</p>
+
                 <p class="text-sm text-gray-500 mt-2">
                     Posted by {{ post["username"] }}
                 </p>
+
+                <!-- SEND OFFER BUTTON -->
+                <div class="mt-4">
+                    <a href="/send-offer/{{ post['id'] }}"
+                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                        Send Offer
+                    </a>
+                </div>
             </div>
             {% endfor %}
 
@@ -64,6 +73,7 @@
 
     </div>
 
+    <!-- Floating New Post Button -->
     <div class="fixed bottom-6 right-6">
         <a href="/create-post"
         class="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-green-700 transition">
