@@ -1,0 +1,19 @@
+CREATE TABLE users (
+	id integer PRIMARY KEY AUTOINCREMENT,
+	username text UNIQUE NOT NULL,
+	email text UNIQUE NOT NULL,
+	password text NOT NULL
+);
+
+CREATE TABLE post_category (
+	id integer PRIMARY KEY,
+	typename text NOT NULL
+);
+
+CREATE TABLE posts (
+	id integer PRIMARY KEY AUTOINCREMENT,
+	owner integer NOT NULL REFERENCES users(id),
+	description text NOT NULL,
+	category_id integer NOT NULL REFERENCES post_category(id),
+	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1))
+);
