@@ -33,26 +33,8 @@ def init_db():
         return False
 
 
-def delete_db():
-    try:
-        remove(DB_PATH)
-        print(f"DB deleted successfully.")
-    except FileNotFoundError:
-        print(f"DB does not exist.")
-
-
-def populate_db():
-    for user in DUMMY_DATA:
-        insert_user(
-            user["username"],
-            user["email"],
-            user["password"],
-            user["location"]
-        )
-
-
 ### POST
-def insert_post(data):
+def create_post(data):
     conn = None
     try:
         conn = get_db()
@@ -60,8 +42,10 @@ def insert_post(data):
 
         cur.execute("""
             INSERT INTO posts (owner, title, description, category_id, is_open)
-            VALUES (?,?,?,?,?)
-        """, (data.user_id, data.title, data.description, data.category_id, data.is_open))
+            SELECT users.id, :title, :description, :category_id, :is_open
+            FROM users
+            WHERE username = :username
+        """, data)
         conn.commit()
 
         # Print something
@@ -86,12 +70,12 @@ def update_post(data):
         cur.execute("""
             UPDATE posts
             SET
-                title = ?,
-                description = ?,
-                category_id = ?,
-                is_open = ?
-            WHERE owner = ? AND id = ?
-        """, (data.title, data.description, data.category_id, data.is_open, data.user_id, data.post_id))
+                title = :title,
+                description = :description,
+                category_id = :category_id,
+                is_open = :is_open
+            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
+        """, data)
         conn.commit()
 
         # Print something
@@ -115,8 +99,8 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE owner = ? AND id = ?
-        """, (data.user_id, data.post_id))
+            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
+        """, data)
         conn.commit()
 
         # Print something
@@ -130,8 +114,31 @@ def delete_post(data):
             conn.rollback()
             conn.close()
         return False
+    
+def get_my_posts(data):
+    conn = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-def search_posts(query, connection=None):
+        cur.execute("""
+            SELECT p.title, p.description, pc.category, p.is_open FROM posts p
+            JOIN post_category pc ON pc.id = p.category_id
+            WHERE owner = (SELECT id FROM users WHERE username = :username)
+        """, data)
+        rows = cur.fetchall()
+
+        # Print something
+
+        cur.close()
+        conn.close()
+
+        return [dict(row) for row in rows]
+    except Exception:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
     """Search and rank open posts using SQLite's FTS4 index.
 
     Ranking happens in SQL with title, category ID, location, and description
@@ -214,7 +221,23 @@ def delete_db():
 
 
 def populate_db():
-    for user in DUMMY_DATA:
+    conn = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        for category in DUMMY_DATA["post_category"]:
+            cur.execute("INSERT INTO post_category (category) VALUES (:category)", category)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+
+    for user in DUMMY_DATA["users"]:
         insert_user(
             user["username"],
             user["email"],

@@ -58,8 +58,12 @@ def logout():
 
 @app.post("/post")
 def create_post_route():
+    username = session["user"]
+    if username is None:
+        return redirect("/")
+
     data = {
-        "user_id": request.form["user_id"],
+        "username": username,
         "title": request.form["title"],
         "description": request.form["description"],
         "category_id": request.form["category_id"],
@@ -74,8 +78,12 @@ def create_post_route():
 
 @app.put("/post/<int:post_id>")
 def update_post_route(post_id):
+    username = session["user"]
+    if username is None:
+        return redirect("/")
+
     data = {
-        "user_id": request.form["user_id"],
+        "username": username,
         "post_id": post_id,
         "title": request.form.get("title"),
         "description": request.form.get("description"),
@@ -91,8 +99,12 @@ def update_post_route(post_id):
 
 @app.delete("/post/<int:post_id>")
 def delete_post_route(post_id):
+    username = session["user"]
+    if username is None:
+        return redirect("/")
+
     data = {
-        "user_id": request.form["user_id"],
+        "username": username,
         "post_id": post_id,
     }
 
