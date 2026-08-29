@@ -306,6 +306,28 @@ def get_received_offers(uid):
         return []
 
 
+def send_offer(data):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO trade_offers
+            SELECT posts.id, :post_receive
+            FROM posts
+            WHERE posts.id = :post_send AND ps.owner = :uid
+        """, data)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+        return True
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
+
+
 ### DB INIT
 def delete_db():
     try:
