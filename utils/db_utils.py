@@ -124,6 +124,15 @@ def delete_post(data):
             conn.close()
         return False
 
+
+def get_all_categories():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT id, category FROM post_category ORDER BY category ASC")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
     
 def get_my_posts(uid):
     conn = get_db()
