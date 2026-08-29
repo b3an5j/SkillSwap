@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS post_category (
 	id integer PRIMARY KEY,
-	typename text NOT NULL
+	category text NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS posts (
@@ -42,8 +42,9 @@ CREATE TRIGGER IF NOT EXISTS posts_search_after_insert
 AFTER INSERT ON posts
 BEGIN
 	INSERT INTO posts_search (docid, post_id, title, category, location, description)
-	SELECT NEW.id, NEW.id, NEW.title, NEW.category, users.location, NEW.description
-	FROM users WHERE users.id = NEW.owner;
+	SELECT NEW.id, NEW.id, NEW.title, post_category.category, users.location, NEW.description
+	FROM users JOIN post_category ON post_category.id = NEW.category_id
+	WHERE users.id = NEW.owner;
 END;
 
 CREATE TRIGGER IF NOT EXISTS posts_search_after_update
@@ -51,8 +52,9 @@ AFTER UPDATE ON posts
 BEGIN
 	DELETE FROM posts_search WHERE docid = OLD.id;
 	INSERT INTO posts_search (docid, post_id, title, category, location, description)
-	SELECT NEW.id, NEW.id, NEW.title, NEW.category, users.location, NEW.description
-	FROM users WHERE users.id = NEW.owner;
+	SELECT NEW.id, NEW.id, NEW.title, post_category.category, users.location, NEW.description
+	FROM users JOIN post_category ON post_category.id = NEW.category_id
+	WHERE users.id = NEW.owner;
 END;
 
 CREATE TRIGGER IF NOT EXISTS posts_search_after_delete
@@ -68,6 +70,6 @@ BEGIN
 	WHERE docid IN (SELECT id FROM posts WHERE owner = OLD.id);
 	INSERT INTO posts_search (docid, post_id, title, category, location, description)
 	SELECT posts.id, posts.id, posts.title, post_category.category, NEW.location, posts.description
-	FROM posts WHERE posts.owner = NEW.id
-	JOIN post_category ON post_category.id = posts.category_id;
+	FROM posts JOIN post_category ON post_category.id = posts.category_id
+	WHERE posts.owner = NEW.id;
 END;
