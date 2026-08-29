@@ -41,6 +41,51 @@ def register():
 
     return "Registered!"
 
+@app.post("/post")
+def create_post_route():
+    data = {
+        "user_id": request.form["user_id"],
+        "title": request.form["title"],
+        "description": request.form["description"],
+        "category_id": request.form["category_id"],
+        "is_open": request.form.get("is_open", 1)
+    }
+
+    if not create_post(data):
+        return "Failed to create post", 500
+
+    return "Post created!", 201
+
+
+@app.put("/post/<int:post_id>")
+def update_post_route(post_id):
+    data = {
+        "user_id": request.form["user_id"],
+        "post_id": post_id,
+        "title": request.form.get("title"),
+        "description": request.form.get("description"),
+        "category_id": request.form.get("category_id"),
+        "is_open": request.form.get("is_open")
+    }
+
+    if not update_post(data):
+        return "Failed to update post", 500
+
+    return "Post updated!"
+
+
+@app.delete("/post/<int:post_id>")
+def delete_post_route(post_id):
+    data = {
+        "user_id": request.form["user_id"],
+        "post_id": post_id,
+    }
+
+    if not delete_post(data):
+        return "Failed to delete post", 500
+
+    return "Post deleted!"
+
 
 delete_db()
 

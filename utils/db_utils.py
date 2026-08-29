@@ -84,7 +84,7 @@ def init_db():
             conn.close()
         return False
 
-def insert_post(data):
+def create_post(data):
     conn = None
     try:
         conn = get_db()
