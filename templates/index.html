@@ -13,10 +13,15 @@
 
     <!-- Navbar -->
     <nav class="bg-white shadow p-4 flex justify-between items-center">
-        <h1 class="text-xl font-bold">SkillSwap</h1>
+        <a href="{% if 'user' in session %}/discover{% else %}/{% endif %}"
+        class="text-xl font-bold hover:underline">
+            SkillSwap
+        </a>
         <div class="space-x-4">
             {% if "user" in session %}
-                <span class="text-gray-700">Welcome, {{ session["user"] }}!</span>
+                <a href="/me" class="text-gray-700 hover:underline">
+                    {{ session["user"] }}
+                </a>
                 <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
             {% else %}
                 <a href="/login" class="text-blue-600 hover:underline">Login</a>

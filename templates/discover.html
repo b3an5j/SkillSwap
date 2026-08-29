@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Discover Skills</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow p-4 flex justify-between items-center">
+        <a href="{% if 'user' in session %}/discover{% else %}/{% endif %}"
+        class="text-xl font-bold hover:underline">
+            SkillSwap
+        </a>
+        <div class="space-x-4">
+            <a href="/me" class="text-gray-700 hover:underline">
+                {{ session["user"] }}
+            </a>
+            <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+        </div>
+    </nav>
+
+    <div class="max-w-3xl mx-auto mt-8">
+
+        <!-- Search Bar -->
+        <form method="GET" class="flex gap-2 mb-6">
+            <input type="text" name="search" value="{{ search }}"
+                   placeholder="Search posts..."
+                   class="flex-1 px-4 py-2 border rounded-lg">
+
+            <select name="category" class="px-4 py-2 border rounded-lg">
+                <option value="">All Categories</option>
+                <option value="1" {% if category == "1" %}selected{% endif %}>Music</option>
+                <option value="2" {% if category == "2" %}selected{% endif %}>Tech</option>
+                <option value="3" {% if category == "3" %}selected{% endif %}>Art</option>
+            </select>
+
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg">
+                Search
+            </button>
+        </form>
+
+        <!-- Posts -->
+        <div class="space-y-4">
+            {% for post in posts %}
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-xl font-bold">{{ post["title"] }}</h3>
+                <p class="text-gray-700">{{ post["description"] }}</p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Posted by {{ post["username"] }}
+                </p>
+            </div>
+            {% endfor %}
+
+            {% if posts|length == 0 %}
+            <p class="text-gray-600 text-center">No posts found.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="fixed bottom-6 right-6">
+        <a href="/create-post"
+        class="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hover:bg-green-700 transition">
+            + New Post
+        </a>
+    </div>
+
+</body>
+</html>

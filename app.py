@@ -102,6 +102,71 @@ def delete_post_route(post_id):
     return "Post deleted!"
 
 
+@app.route("/discover")
+def discover():
+    if "user" not in session:
+        return redirect("/login")
+
+    search = request.args.get("search", "")
+    category = request.args.get("category", "")
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    query = """
+        SELECT posts.*, users.username
+        FROM posts
+        JOIN users ON posts.owner = users.id
+        WHERE 1=1
+    """
+    params = []
+
+    if search:
+        query += " AND (posts.title LIKE ? OR posts.description LIKE ?)"
+        params.extend([f"%{search}%", f"%{search}%"])
+
+    if category:
+        query += " AND posts.category_id = ?"
+        params.append(category)
+
+    cur.execute(query, params)
+    posts = cur.fetchall()
+    conn.close()
+
+    return render_template("discover.html", posts=posts, search=search, category=category)
+
+
+@app.route("/me")
+def me():
+    if "user" not in session:
+        return redirect("/login")
+
+    username = session["user"]
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Get user info
+    cur.execute("""
+        SELECT id, username, email, location
+        FROM users
+        WHERE username = ?
+    """, (username,))
+    user = cur.fetchone()
+
+    # Get user's posts
+    cur.execute("""
+        SELECT id, title, description, category_id, is_open
+        FROM posts
+        WHERE owner = ?
+    """, (user["id"],))
+    posts = cur.fetchall()
+
+    conn.close()
+
+    return render_template("me.html", user=user, posts=posts)
+
+
 delete_db()
 
 with app.app_context():

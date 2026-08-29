@@ -32,8 +32,27 @@ def init_db():
             conn.close()
         return False
 
+
+def delete_db():
+    try:
+        remove(DB_PATH)
+        print(f"DB deleted successfully.")
+    except FileNotFoundError:
+        print(f"DB does not exist.")
+
+
+def populate_db():
+    for user in DUMMY_DATA:
+        insert_user(
+            user["username"],
+            user["email"],
+            user["password"],
+            user["location"]
+        )
+
+
 ### POST
-def create_post(data):
+def insert_post(data):
     conn = None
     try:
         conn = get_db()
@@ -41,8 +60,8 @@ def create_post(data):
 
         cur.execute("""
             INSERT INTO posts (owner, title, description, category_id, is_open)
-            VALUES (:user_id, :title, :description, :category_id, :is_open)
-        """, data)
+            VALUES (?,?,?,?,?)
+        """, (data.user_id, data.title, data.description, data.category_id, data.is_open))
         conn.commit()
 
         # Print something
@@ -67,12 +86,12 @@ def update_post(data):
         cur.execute("""
             UPDATE posts
             SET
-                title = :title,
-                description = :description,
-                category_id = :category_id,
-                is_open = :is_open
-            WHERE owner = :user_id AND id = :post_id
-        """, data)
+                title = ?,
+                description = ?,
+                category_id = ?,
+                is_open = ?
+            WHERE owner = ? AND id = ?
+        """, (data.title, data.description, data.category_id, data.is_open, data.user_id, data.post_id))
         conn.commit()
 
         # Print something
@@ -96,8 +115,8 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE owner = :user_id AND id = :post_id
-        """, data)
+            WHERE owner = ? AND id = ?
+        """, (data.user_id, data.post_id))
         conn.commit()
 
         # Print something
