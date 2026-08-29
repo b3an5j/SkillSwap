@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Offers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Navbar -->
+<nav class="bg-white shadow p-4 flex justify-between items-center">
+    <a href="/discover" class="text-xl font-bold hover:underline">SkillSwap</a>
+    <div class="space-x-4">
+        <a href="/me" class="text-gray-700 hover:underline">{{ session["user"] }}</a>
+        <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+    </div>
+</nav>
+
+<div class="max-w-3xl mx-auto mt-8 bg-white p-6 rounded-lg shadow">
+
+    <!-- BIG TABS yeah boy -->
+    <div class="flex justify-center space-x-6 mb-8">
+        <a href="/offer?tab=sent"
+           class="px-8 py-4 text-xl font-bold rounded-lg transition
+                  {% if tab == 'sent' %}
+                      bg-blue-600 text-white shadow-lg
+                  {% else %}
+                      bg-gray-200 text-gray-700 hover:bg-gray-300
+                  {% endif %}">
+            Sent Offers
+        </a>
+
+        <a href="/offer?tab=received"
+           class="px-8 py-4 text-xl font-bold rounded-lg transition
+                  {% if tab == 'received' %}
+                      bg-blue-600 text-white shadow-lg
+                  {% else %}
+                      bg-gray-200 text-gray-700 hover:bg-gray-300
+                  {% endif %}">
+            Received Offers
+        </a>
+    </div>
+
+    <!-- SENT OFFERS TAB -->
+    {% if tab == 'sent' %}
+        {% if sent|length == 0 %}
+            <p class="text-gray-600 text-center">You haven't sent any offers yet.</p>
+        {% else %}
+            <div class="space-y-4">
+                {% for offer in sent %}
+                    <div class="border p-4 rounded-lg">
+                        <p><strong>Post:</strong> {{ offer.title }}</p>
+                        <p><strong>Message:</strong> {{ offer.message }}</p>
+                        <p><strong>Status:</strong> {{ offer.status }}</p>
+
+                        <!-- DELETE BUTTON -->
+                        <button class="mt-3 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                            Delete Offer
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- RECEIVED OFFERS TAB -->
+    {% if tab == 'received' %}
+        {% if received|length == 0 %}
+            <p class="text-gray-600 text-center">You haven't received any offers yet.</p>
+        {% else %}
+            <div class="space-y-4">
+                {% for offer in received %}
+                    <div class="border p-4 rounded-lg">
+                        <p><strong>From:</strong> {{ offer.sender_name }}</p>
+                        <p><strong>Post:</strong> {{ offer.title }}</p>
+                        <p><strong>Message:</strong> {{ offer.message }}</p>
+                        <p><strong>Status:</strong> {{ offer.status }}</p>
+
+                        <!-- ACCEPT + REJECT BUTTONS -->
+                        <div class="mt-3 flex space-x-3">
+                            <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                Accept
+                            </button>
+
+                            <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endif %}
+
+</div>
+
+</body>
+</html>

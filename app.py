@@ -170,7 +170,17 @@ def me():
     posts = get_my_posts(uid)
     categories = get_post_categories()
 
-    return render_template("me.html", user=user, posts=posts, categories=categories)
+    # sent_count = len(get_sent_offers(uid))
+    # received_count = len(get_received_offers(uid))
+    sent_count = 67
+    received_count = 69
+
+    return render_template("me.html",
+                           user=user,
+                           posts=posts,
+                           categories=categories,
+                           sent_count=sent_count,
+                           received_count=received_count)
 
 
 @app.put("/api/post/<int:post_id>")
@@ -207,6 +217,26 @@ def api_delete_post(post_id):
         return {"ok": True}
     else:
         return {"ok": False, "error": "Delete failed"}, 500
+
+
+@app.route("/offer")
+def offer():
+    if "uid" not in session:
+        return redirect("/login")
+
+    uid = session["uid"]
+
+    # sent = get_sent_offers(uid)
+    # received = get_received_offers(uid)
+    sent = []
+    received = []
+
+    tab = request.args.get("tab", "sent")  # default tab
+
+    return render_template("offer.html",
+                           sent=sent,
+                           received=received,
+                           tab=tab)
 
 
 delete_db()

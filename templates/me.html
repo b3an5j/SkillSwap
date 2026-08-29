@@ -28,6 +28,20 @@
             <p><strong>Location:</strong> {{ user.location }}</p>
         </div>
 
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-2xl font-bold mb-4">Your Offers</h2>
+
+            <div class="flex space-x-6 text-lg">
+                <a href="/offer?tab=sent" class="text-blue-600 hover:underline">
+                    Sent Offers: <strong>{{ sent_count }}</strong>
+                </a>
+
+                <a href="/offer?tab=received" class="text-blue-600 hover:underline">
+                    Received Offers: <strong>{{ received_count }}</strong>
+                </a>
+            </div>
+        </div>
+
         <!-- Your Posts -->
         <div class="bg-white p-6 rounded-lg shadow mb-6">
             <h2 class="text-2xl font-bold mb-4">Your Posts</h2>
