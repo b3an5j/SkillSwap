@@ -91,7 +91,7 @@ def create_post_page():
     if "uid" not in session:
         return redirect("/login")
 
-    categories = get_all_categories()
+    categories = get_post_categories()
     return render_template("create_post.html", categories=categories)
 
 
@@ -168,7 +168,7 @@ def me():
 
     user = get_user_by_id(uid)
     posts = get_my_posts(uid)
-    categories = get_all_categories()
+    categories = get_post_categories()
 
     return render_template("me.html", user=user, posts=posts, categories=categories)
 
