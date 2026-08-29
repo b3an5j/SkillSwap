@@ -113,8 +113,31 @@ def delete_post(data):
             conn.rollback()
             conn.close()
         return False
+    
+def get_my_posts(data):
+    conn = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-def search_posts(query, connection=None):
+        cur.execute("""
+            SELECT p.title, p.description, pc.category, p.is_open FROM posts p
+            JOIN post_category pc ON pc.id = p.category_id
+            WHERE owner = (SELECT id FROM users WHERE username = :username)
+        """, data)
+        rows = cur.fetchall()
+
+        # Print something
+
+        cur.close()
+        conn.close()
+
+        return [dict(row) for row in rows]
+    except Exception:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
     """Search and rank open posts using SQLite's FTS4 index.
 
     Ranking happens in SQL with title, category ID, location, and description
