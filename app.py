@@ -15,8 +15,8 @@ if not os.path.exists(DB_PATH):
 
 
 @app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+def index():
+    return render_template("index.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -28,6 +28,8 @@ def login():
     password = request.form["password"]
 
     # TODO: check DB for user
+    
+
     # TODO: verify password hash
     return "Logged in!"
 

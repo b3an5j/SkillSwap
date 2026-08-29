@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SkillSwap</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Tailwind for quick styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold">SkillSwap</h1>
+        <div class="space-x-4">
+            <a href="/login" class="text-blue-600 hover:underline">Login</a>
+            <a href="/register" class="text-blue-600 hover:underline">Register</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="flex-1 flex flex-col items-center justify-center text-center px-4">
+        <h2 class="text-4xl font-bold mb-4">Trade Skills. Not Money.</h2>
+        <p class="text-lg text-gray-700 max-w-xl mb-8">
+            SkillSwap lets you exchange your abilities with others.<br>
+            Build connections, learn new things, and help others.
+        </p>
+
+        <a href="/register"
+           class="bg-blue-600 text-white px-6 py-3 rounded-lg text-lg hover:bg-blue-700 transition">
+            Get Started
+        </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white text-center p-4 text-gray-600">
+        © 2026 SkillSwap
+    </footer>
+
+</body>
+</html>

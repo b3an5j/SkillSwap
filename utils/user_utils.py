@@ -8,3 +8,5 @@ def encrypt_pwd(raw_pwd):
 
 def check_pwd(pwd, hashed):
     return bcrypt.checkpw(pwd, hashed)
+
+def insert_user
