@@ -280,8 +280,5 @@ def insert_user(uname, email, pwd, loc):
 #         for data in row:
 #             print(data)
 
-    
-    
-
-    conn.commit()
-    conn.close()
+#     conn.commit()
+#     conn.close()
