@@ -1,4 +1,5 @@
 import sqlite3
+from pathlib import Path
 
 DB_PATH = "database/database.sqlite"
 SCHEMA_PATH = "database/schema.sql"
