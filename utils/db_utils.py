@@ -140,25 +140,23 @@ def get_my_posts(data):
             conn.close()
         return False
 
-
-def search_posts(query, connection=None):
+def search_posts(data):
     """Search and rank open posts using SQLite's FTS4 index.
 
     Ranking happens in SQL with title, category ID, location, and description
     as descending priorities.  FTS4 performs the candidate search; no Python
     similarity calculation or sorting is used.
     """
-    if not isinstance(query, str):
-        raise TypeError("query must be a string")
-
-    query = query.strip()
+    query = data.query.strip()
     if not query:
         return []
 
-    owns_connection = connection is None
-    conn = connection or get_db()
+    conn = None
     try:
-        rows = conn.execute(
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute(
             """
             WITH title_matches AS (
                 SELECT docid
@@ -205,15 +203,19 @@ def search_posts(query, connection=None):
             JOIN post_category ON post_category.id = posts.category_id
             JOIN posts ON posts.id = matching_posts.docid
             JOIN users ON users.id = posts.owner
-            WHERE posts.is_open = 1
+            WHERE posts.is_open = 1 AND posts.owner != (SELECT id FROM users WHERE username = :username)
             ORDER BY relevance DESC, posts.id ASC
             """
-            , {"query": query}
-        ).fetchall()
+            , { "username": data.username, "query" : query }
+        )
+        rows = cur.fetchall()
+
         return [dict(row) for row in rows]
-    finally:
-        if owns_connection:
+    except Exception:
+        if conn:
+            conn.rollback()
             conn.close()
+        return []
 
 def delete_db():
     try:
