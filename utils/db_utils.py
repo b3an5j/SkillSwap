@@ -195,7 +195,23 @@ def delete_db():
 
 
 def populate_db():
-    for user in DUMMY_DATA:
+    conn = None
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        for category in DUMMY_DATA["post_category"]:
+            cur.execute("INSERT INTO post_category (category) VALUES (:category)", category)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+
+    for user in DUMMY_DATA["users"]:
         insert_user(
             user["username"],
             user["email"],
