@@ -42,19 +42,22 @@ def create_post(data):
 
         cur.execute("""
             INSERT INTO posts (owner, title, description, category_id, is_open)
-            SELECT users.id, :title, :description, :category_id, :is_open
-            FROM users
-            WHERE username = :username
-        """, data)
+            VALUES (:uid, :title, :description, :category_id, :is_open)
+        """, {
+            "uid": data["uid"],
+            "title": data["title"],
+            "description": data["description"],
+            "category_id": data["category_id"],
+            "is_open": data["is_open"]
+        })
+
         conn.commit()
-
-        # Print something
-
         cur.close()
         conn.close()
-
         return True
-    except Exception:
+
+    except Exception as e:
+        print("create_post error:", e)
         if conn:
             conn.rollback()
             conn.close()
@@ -67,24 +70,31 @@ def update_post(data):
         conn = get_db()
         cur = conn.cursor()
 
+        # Ownership check
+        cur.execute("""
+            SELECT owner FROM posts WHERE id = :post_id
+        """, {"post_id": data["post_id"]})
+        row = cur.fetchone()
+
+        if not row or row["owner"] != data["uid"]:
+            return False
+
         cur.execute("""
             UPDATE posts
-            SET
-                title = :title,
+            SET title = :title,
                 description = :description,
                 category_id = :category_id,
                 is_open = :is_open
-            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
+            WHERE id = :post_id
         """, data)
+
         conn.commit()
-
-        # Print something
-
         cur.close()
         conn.close()
-
         return True
-    except Exception:
+
+    except Exception as e:
+        print("update_post error:", e)
         if conn:
             conn.rollback()
             conn.close()
@@ -99,46 +109,45 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
-        """, data)
+            WHERE id = :post_id AND owner = :uid
+        """, {"post_id": data["post_id"], "uid": data["uid"]})
+
         conn.commit()
-
-        # Print something
-
         cur.close()
         conn.close()
-
         return True
-    except Exception:
+
+    except Exception as e:
+        print("delete_post error:", e)
         if conn:
             conn.rollback()
             conn.close()
         return False
+
     
-def get_my_posts(data):
-    conn = None
-    try:
-        conn = get_db()
-        cur = conn.cursor()
+def get_my_posts(uid):
+    conn = get_db()
+    cur = conn.cursor()
 
-        cur.execute("""
-            SELECT p.title, p.description, pc.category, p.is_open FROM posts p
-            JOIN post_category pc ON pc.id = p.category_id
-            WHERE owner = (SELECT id FROM users WHERE username = :username)
-        """, data)
-        rows = cur.fetchall()
+    cur.execute("""
+        SELECT posts.id, posts.title, posts.description,
+               post_category.category AS category, posts.is_open
+        FROM posts
+        JOIN post_category ON post_category.id = posts.category_id
+        WHERE posts.owner = :uid
+        ORDER BY posts.id DESC
+    """, {"uid": uid})
 
-        # Print something
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
-        cur.close()
-        conn.close()
 
-        return [dict(row) for row in rows]
-    except Exception:
-        if conn:
-            conn.rollback()
-            conn.close()
-        return False
+class SearchData:
+    def __init__(self, uid, query):
+        self.uid = uid
+        self.query = query
+
 
 def search_posts(data):
     """Search and rank open posts using SQLite's FTS4 index.
@@ -203,10 +212,10 @@ def search_posts(data):
             JOIN post_category ON post_category.id = posts.category_id
             JOIN posts ON posts.id = matching_posts.docid
             JOIN users ON users.id = posts.owner
-            WHERE posts.is_open = 1 AND posts.owner != (SELECT id FROM users WHERE username = :username)
+            WHERE posts.is_open = 1 AND posts.owner != :uid
             ORDER BY relevance DESC, posts.id ASC
             """
-            , { "username": data.username, "query" : query }
+            , { "uid": data.uid, "query": query }
         )
         rows = cur.fetchall()
 
@@ -217,6 +226,41 @@ def search_posts(data):
             conn.close()
         return []
 
+
+def search_posts_relational(search="", category="", uid=None):
+    conn = get_db()
+    cur = conn.cursor()
+
+    query = """
+        SELECT posts.id, posts.owner, posts.title, posts.description,
+               post_category.category, posts.is_open,
+               users.username, users.location
+        FROM posts
+        JOIN users ON posts.owner = users.id
+        JOIN post_category ON post_category.id = posts.category_id
+        WHERE posts.is_open = 1 AND posts.owner != :uid
+    """
+
+    params = {}
+
+    if uid is not None:
+        query += " AND posts.owner != :uid"
+        params["uid"] = uid
+
+    if category:
+        query += " AND posts.category_id = :category"
+        params["category"] = category
+
+    query += " ORDER BY posts.id DESC"
+
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+### DB INIT
 def delete_db():
     try:
         remove(DB_PATH)
@@ -319,6 +363,38 @@ def get_pwd(uname, is_email=False):
     if row is None:
         return None  # no such user
     return row[0] # hashed password
+
+
+def get_user_by_id(uid):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, username, email, location
+        FROM users
+        WHERE id = :uid
+    """, {"uid": uid})
+
+    user = cur.fetchone()
+    conn.close()
+
+    return user
+
+
+def get_user_by_username(username):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, username, email, location
+        FROM users
+        WHERE username = :username
+    """, {"username": username})
+
+    user = cur.fetchone()
+    conn.close()
+
+    return user
 
 
 def get_name(email):

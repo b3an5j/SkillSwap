@@ -20,7 +20,12 @@ def login():
     password = request.form["password"]
 
     if check_pwd(name, password):
-        session["user"] = get_name(name) if '@' in name else name
+        username = get_name(name) if '@' in name else name
+        user = get_user_by_username(username)
+
+        session["user"] = user["username"]   # username
+        session["uid"]  = user["id"]         # user ID
+
         return redirect("/")
     else:
         return render_template("login.html", error="Invalid username or password")
@@ -47,7 +52,10 @@ def register():
                                error="Email is already registered.")
 
     insert_user(username, email, password, location)
-    session["user"] = username
+    user = get_user_by_username(username)
+
+    session["user"] = user["username"]
+    session["uid"]  = user["id"]
     return redirect("/")
 
 
@@ -63,7 +71,7 @@ def create_post_route():
         return redirect("/")
 
     data = {
-        "username": username,
+        "uid": session["uid"],
         "title": request.form["title"],
         "description": request.form["description"],
         "category_id": request.form["category_id"],
@@ -83,7 +91,7 @@ def update_post_route(post_id):
         return redirect("/")
 
     data = {
-        "username": username,
+        "uid": session["uid"],
         "post_id": post_id,
         "title": request.form.get("title"),
         "description": request.form.get("description"),
@@ -104,7 +112,7 @@ def delete_post_route(post_id):
         return redirect("/")
 
     data = {
-        "username": username,
+        "uid": session["uid"],
         "post_id": post_id,
     }
 
@@ -116,65 +124,35 @@ def delete_post_route(post_id):
 
 @app.route("/discover")
 def discover():
-    if "user" not in session:
+    if "uid" not in session:
         return redirect("/login")
 
-    search = request.args.get("search", "")
-    category = request.args.get("category", "")
+    search = request.args.get("search", "").strip()
+    category = request.args.get("category", "").strip()
 
-    conn = get_db()
-    cur = conn.cursor()
-
-    query = """
-        SELECT posts.*, users.username
-        FROM posts
-        JOIN users ON posts.owner = users.id
-        WHERE 1=1
-    """
-    params = []
-
+    # Use FTS search when user types something
     if search:
-        query += " AND (posts.title LIKE ? OR posts.description LIKE ?)"
-        params.extend([f"%{search}%", f"%{search}%"])
+        data = SearchData(uid=session["uid"], query=search)
+        posts = search_posts(data)
+    else:
+        # fallback: relational browsing
+        posts = search_posts_relational(search="", category=category, uid=session["uid"])
 
-    if category:
-        query += " AND posts.category_id = ?"
-        params.append(category)
-
-    cur.execute(query, params)
-    posts = cur.fetchall()
-    conn.close()
-
-    return render_template("discover.html", posts=posts, search=search, category=category)
+    return render_template("discover.html",
+                           posts=posts,
+                           search=search,
+                           category=category)
 
 
 @app.route("/me")
 def me():
-    if "user" not in session:
+    if "uid" not in session:
         return redirect("/login")
 
-    username = session["user"]
+    uid = session["uid"]
 
-    conn = get_db()
-    cur = conn.cursor()
-
-    # Get user info
-    cur.execute("""
-        SELECT id, username, email, location
-        FROM users
-        WHERE username = ?
-    """, (username,))
-    user = cur.fetchone()
-
-    # Get user's posts
-    cur.execute("""
-        SELECT id, title, description, category_id, is_open
-        FROM posts
-        WHERE owner = ?
-    """, (user["id"],))
-    posts = cur.fetchall()
-
-    conn.close()
+    user = get_user_by_id(uid)
+    posts = get_my_posts(uid)
 
     return render_template("me.html", user=user, posts=posts)
 
