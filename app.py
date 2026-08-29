@@ -140,6 +140,7 @@ def discover():
     if "uid" not in session:
         return redirect("/login")
 
+    my_posts = get_my_posts(session["uid"])
     search = request.args.get("search", "").strip()
     category = request.args.get("category", "").strip()
 
@@ -155,7 +156,8 @@ def discover():
                            posts=posts,
                            search=search,
                            category=category,
-                           categories=categories)
+                           categories=categories,
+                           my_posts=my_posts)
 
 
 @app.route("/me")
@@ -249,6 +251,22 @@ def offer():
                            sent=sent,
                            received=received,
                            tab=tab)
+
+
+@app.route("/send-offer", methods=["POST"])
+def send_offer_route():
+    if "uid" not in session:
+        return redirect("/login")
+
+    data = {
+        "post_send": request.form["post_send"],
+        "post_receive": request.form["post_receive"],
+        "uid": session["uid"]
+    }
+
+    send_offer(data)
+
+    return redirect("/offer?tab=sent")
 
 
 delete_db()
