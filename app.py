@@ -156,8 +156,45 @@ def me():
 
     user = get_user_by_id(uid)
     posts = get_my_posts(uid)
+    categories = get_all_categories()
 
-    return render_template("me.html", user=user, posts=posts)
+    return render_template("me.html", user=user, posts=posts, categories=categories)
+
+
+@app.put("/api/post/<int:post_id>")
+def api_update_post(post_id):
+    if "uid" not in session:
+        return {"ok": False, "error": "Not logged in"}, 401
+
+    data = {
+        "uid": session["uid"],
+        "post_id": post_id,
+        "title": request.form.get("title"),
+        "description": request.form.get("description"),
+        "category_id": request.form.get("category_id"),
+        "is_open": 1   # <-- FIX: always keep post open
+    }
+
+    if update_post(data):
+        return {"ok": True}
+    else:
+        return {"ok": False, "error": "Update failed"}, 500
+
+
+@app.delete("/api/post/<int:post_id>")
+def api_delete_post(post_id):
+    if "uid" not in session:
+        return {"ok": False, "error": "Not logged in"}, 401
+
+    data = {
+        "uid": session["uid"],
+        "post_id": post_id
+    }
+
+    if delete_post(data):
+        return {"ok": True}
+    else:
+        return {"ok": False, "error": "Delete failed"}, 500
 
 
 delete_db()
