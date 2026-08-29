@@ -139,6 +139,9 @@ def get_my_posts(data):
             conn.rollback()
             conn.close()
         return False
+
+
+def search_posts(query, connection=None):
     """Search and rank open posts using SQLite's FTS4 index.
 
     Ranking happens in SQL with title, category ID, location, and description
