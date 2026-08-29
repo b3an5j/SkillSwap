@@ -41,7 +41,9 @@ def create_post(data):
 
         cur.execute("""
             INSERT INTO posts (owner, title, description, category_id, is_open)
-            VALUES (:user_id, :title, :description, :category_id, :is_open)
+            SELECT users.id, :title, :description, :category_id, :is_open
+            FROM users
+            WHERE username = :username
         """, data)
         conn.commit()
 
@@ -71,7 +73,7 @@ def update_post(data):
                 description = :description,
                 category_id = :category_id,
                 is_open = :is_open
-            WHERE owner = :user_id AND id = :post_id
+            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
         """, data)
         conn.commit()
 
@@ -96,7 +98,7 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE owner = :user_id AND id = :post_id
+            WHERE owner = (SELECT id FROM users WHERE username = :username) AND id = :post_id
         """, data)
         conn.commit()
 
