@@ -179,5 +179,12 @@ DUMMY_DATA = {
     "description": "Lorem ipsum",
     "category_id": 10,
     "is_open": 1,
-  },]
+  },],
+  "trade_offers": [
+    { "post_send": 1, "post_receive": 2 },
+    { "post_send": 1, "post_receive": 3 },
+    { "post_send": 1, "post_receive": 4 },
+    { "post_send": 5, "post_receive": 1 },
+    { "post_send": 6, "post_receive": 1 },
+  ]
 }
