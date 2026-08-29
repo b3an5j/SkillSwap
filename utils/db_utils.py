@@ -92,8 +92,8 @@ def insert_post(data):
 
         cur.execute("""
             INSERT INTO posts (owner, title, description, category_id, is_open)
-            VALUES (?,?,?,?,?)
-        """, (data.user_id, data.title, data.description, data.category_id, data.is_open))
+            VALUES (:user_id, :title, :description, :category_id, :is_open)
+        """, data)
         conn.commit()
 
         # Print something
@@ -117,12 +117,12 @@ def update_post(data):
         cur.execute("""
             UPDATE posts
             SET
-                title = ?,
-                description = ?,
-                category_id = ?,
-                is_open = ?
-            WHERE owner = ? AND id = ?
-        """, (data.title, data.description, data.category_id, data.is_open, data.user_id, data.post_id))
+                title = :title,
+                description = :description,
+                category_id = :category_id,
+                is_open = :is_open
+            WHERE owner = :user_id AND id = :post_id
+        """, data)
         conn.commit()
 
         # Print something
@@ -145,8 +145,8 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE owner = ? AND id = ?
-        """, (data.user_id, data.post_id))
+            WHERE owner = :user_id AND id = :post_id
+        """, data)
         conn.commit()
 
         # Print something
