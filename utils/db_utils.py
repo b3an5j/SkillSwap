@@ -219,6 +219,11 @@ def search_posts(data):
             JOIN users u ON p.owner = u.id
             WHERE posts_fts MATCH :query
             AND p.is_open = 1 AND p.owner != :uid
+            AND p.id NOT IN (
+                SELECT t.post_receive FROM trade_offers t
+                JOIN posts ps ON t.post_send = ps.id
+                WHERE p.owner = :uid
+            )
             ORDER BY rank ASC;
             """
             , { "uid": data.uid, "query": query }
@@ -245,6 +250,11 @@ def search_posts_relational(search="", category="", uid=None):
         JOIN users ON posts.owner = users.id
         JOIN post_category ON post_category.id = posts.category_id
         WHERE posts.is_open = 1 AND posts.owner != :uid
+        AND posts.id NOT IN (
+            SELECT t.post_receive FROM trade_offers t
+            JOIN posts ps ON t.post_send = ps.id
+            WHERE p.owner = :uid
+        )
     """
 
     params = {}
