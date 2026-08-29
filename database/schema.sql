@@ -20,56 +20,30 @@ CREATE TABLE IF NOT EXISTS posts (
 	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1))
 );
 
--- FTS4 keeps a searchable projection of a post and its owner's location.
--- post_id is retained for joins, but is not itself full-text indexed.
-CREATE VIRTUAL TABLE IF NOT EXISTS posts_search USING fts4(
-	post_id UNINDEXED,
-	title,
-	category,
-	location,
-	description
+CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
+    title,
+    description,
+    category,
+    location,
+    tokenize='trigram'
 );
 
--- Rebuild on startup so databases created before the FTS index are populated.
-DELETE FROM posts_search;
-INSERT INTO posts_search (docid, post_id, title, category, location, description)
-SELECT posts.id, posts.id, posts.title, post_category.category, users.location, posts.description
-FROM posts
-JOIN users ON users.id = posts.owner
-JOIN post_category ON post_category.id = posts.category_id;
-
-CREATE TRIGGER IF NOT EXISTS posts_search_after_insert
-AFTER INSERT ON posts
-BEGIN
-	INSERT INTO posts_search (docid, post_id, title, category, location, description)
-	SELECT NEW.id, NEW.id, NEW.title, post_category.category, users.location, NEW.description
-	FROM users JOIN post_category ON post_category.id = NEW.category_id
-	WHERE users.id = NEW.owner;
+-- Keep FTS table in sync when posts change
+CREATE TRIGGER IF NOT EXISTS posts_ai AFTER INSERT ON posts BEGIN
+    INSERT INTO posts_fts (rowid, title, description, category, location)
+    SELECT NEW.id, NEW.title, NEW.description, pc.category, u.location
+    FROM post_category pc, users u
+    WHERE pc.id = NEW.category_id AND u.id = NEW.owner;
 END;
 
-CREATE TRIGGER IF NOT EXISTS posts_search_after_update
-AFTER UPDATE ON posts
-BEGIN
-	DELETE FROM posts_search WHERE docid = OLD.id;
-	INSERT INTO posts_search (docid, post_id, title, category, location, description)
-	SELECT NEW.id, NEW.id, NEW.title, post_category.category, users.location, NEW.description
-	FROM users JOIN post_category ON post_category.id = NEW.category_id
-	WHERE users.id = NEW.owner;
+CREATE TRIGGER IF NOT EXISTS posts_ad AFTER DELETE ON posts BEGIN
+    DELETE FROM posts_fts WHERE rowid = OLD.id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS posts_search_after_delete
-AFTER DELETE ON posts
-BEGIN
-	DELETE FROM posts_search WHERE docid = OLD.id;
-END;
-
-CREATE TRIGGER IF NOT EXISTS posts_search_after_location_update
-AFTER UPDATE OF location ON users
-BEGIN
-	DELETE FROM posts_search
-	WHERE docid IN (SELECT id FROM posts WHERE owner = OLD.id);
-	INSERT INTO posts_search (docid, post_id, title, category, location, description)
-	SELECT posts.id, posts.id, posts.title, post_category.category, NEW.location, posts.description
-	FROM posts JOIN post_category ON post_category.id = posts.category_id
-	WHERE posts.owner = NEW.id;
+CREATE TRIGGER IF NOT EXISTS posts_au AFTER UPDATE ON posts BEGIN
+    DELETE FROM posts_fts WHERE rowid = OLD.id;
+    INSERT INTO posts_fts (rowid, title, description, category, location)
+    SELECT NEW.id, NEW.title, NEW.description, pc.category, u.location
+    FROM post_category pc, users u
+    WHERE pc.id = NEW.category_id AND u.id = NEW.owner;
 END;

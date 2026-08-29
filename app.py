@@ -66,9 +66,10 @@ def logout():
 
 @app.post("/post")
 def create_post_route():
-    username = session["user"]
-    if username is None:
-        return redirect("/")
+    try:
+        username = session["user"]
+    except:
+        return render_template("login.html")
 
     data = {
         "uid": session["uid"],
@@ -86,9 +87,10 @@ def create_post_route():
 
 @app.put("/post/<int:post_id>")
 def update_post_route(post_id):
-    username = session["user"]
-    if username is None:
-        return redirect("/")
+    try:
+        username = session["user"]
+    except:
+        return render_template("login.html")
 
     data = {
         "uid": session["uid"],
@@ -107,9 +109,10 @@ def update_post_route(post_id):
 
 @app.delete("/post/<int:post_id>")
 def delete_post_route(post_id):
-    username = session["user"]
-    if username is None:
-        return redirect("/")
+    try:
+        username = session["user"]
+    except:
+        return render_template("login.html")
 
     data = {
         "uid": session["uid"],
