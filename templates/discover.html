@@ -57,12 +57,20 @@
                 </p>
 
                 <!-- SEND OFFER BUTTON -->
-                <div class="mt-4">
-                    <a href="/send-offer/{{ post['id'] }}"
-                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                        Send Offer
-                    </a>
-                </div>
+            <form action="/send-offer" method="POST" class="mt-4 flex gap-2">
+                <input type="hidden" name="post_receive" value="{{ post['id'] }}">
+
+                <select name="post_send" class="border px-3 py-2 rounded-lg">
+                    {% for mp in my_posts %}
+                        <option value="{{ mp.id }}">{{ mp.title }}</option>
+                    {% endfor %}
+                </select>
+
+                <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    Send Offer
+                </button>
+            </form>
+
             </div>
             {% endfor %}
 

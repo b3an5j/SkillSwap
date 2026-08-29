@@ -249,19 +249,17 @@ def search_posts_relational(search="", category="", uid=None):
         FROM posts
         JOIN users ON posts.owner = users.id
         JOIN post_category ON post_category.id = posts.category_id
-        WHERE posts.is_open = 1 AND posts.owner != :uid
-        AND posts.id NOT IN (
-            SELECT t.post_receive FROM trade_offers t
-            JOIN posts ps ON t.post_send = ps.id
-            WHERE p.owner = :uid
-        )
+        WHERE posts.is_open = 1
+          AND posts.owner != :uid
+          AND posts.id NOT IN (
+              SELECT t.post_receive
+              FROM trade_offers t
+              JOIN posts ps ON t.post_send = ps.id
+              WHERE ps.owner = :uid
+          )
     """
 
-    params = {}
-
-    if uid is not None:
-        query += " AND posts.owner != :uid"
-        params["uid"] = uid
+    params = {"uid": uid}
 
     if category:
         query += " AND posts.category_id = :category"
@@ -321,10 +319,10 @@ def send_offer(data):
         conn = get_db()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO trade_offers
+            INSERT INTO trade_offers (post_send, post_receive)
             SELECT posts.id, :post_receive
             FROM posts
-            WHERE posts.id = :post_send AND ps.owner = :uid
+            WHERE posts.id = :post_send AND posts.owner = :uid
         """, data)
         conn.commit()
 
