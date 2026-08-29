@@ -125,15 +125,21 @@ def delete_post(data):
         return False
 
 
-def get_all_categories():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT id, category FROM post_category ORDER BY category ASC")
-    rows = cur.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+def get_post_categories():
+    try:
+        conn = get_db()
+        cur = conn.cursor()
 
-    
+        cur.execute("SELECT * FROM post_category ORDER BY category ASC")
+        rows = cur.fetchall()
+
+        return [dict(row) for row in rows]
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return []
+
 def get_my_posts(uid):
     conn = get_db()
     cur = conn.cursor()
@@ -184,13 +190,13 @@ def search_posts(data):
                 pc.category,
                 u.username,
                 u.location,
-                bm25(posts_fts, 4.0, 3.0, 2.0, 1.0) AS rank
+                bm25(posts_fts, 4, 3, 2, 1) AS rank
             FROM posts_fts
             JOIN posts p ON p.id = posts_fts.rowid
             JOIN post_category pc ON p.category_id = pc.id
             JOIN users u ON p.owner = u.id
             WHERE posts_fts MATCH :query
-            AND p.is_open = 1 AND posts.owner != :uid
+            AND p.is_open = 1 AND p.owner != :uid
             ORDER BY rank ASC;
             """
             , { "uid": data.uid, "query": query }

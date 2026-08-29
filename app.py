@@ -65,6 +65,7 @@ def logout():
     return redirect("/")
 
 @app.post("/post")
+@app.post("/post")
 def create_post_route():
     try:
         username = session["user"]
@@ -82,7 +83,16 @@ def create_post_route():
     if not create_post(data):
         return "Failed to create post", 500
 
-    return "Post created!", 201
+    return redirect("/me?created=1")
+
+
+@app.route("/create-post", methods=["GET"])
+def create_post_page():
+    if "uid" not in session:
+        return redirect("/login")
+
+    categories = get_all_categories()
+    return render_template("create_post.html", categories=categories)
 
 
 @app.put("/post/<int:post_id>")
@@ -132,6 +142,7 @@ def discover():
 
     search = request.args.get("search", "").strip()
     category = request.args.get("category", "").strip()
+    category_list = get_post_categories()
 
     # Use FTS search when user types something
     if search:
@@ -144,7 +155,8 @@ def discover():
     return render_template("discover.html",
                            posts=posts,
                            search=search,
-                           category=category)
+                           category=category,
+                           category_list=category_list)
 
 
 @app.route("/me")
