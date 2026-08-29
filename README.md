@@ -5,3 +5,7 @@ We create a tool for people to looking for the people with soft skills that you 
 
 Tools and languages use for the product:
 We use basic frameworks and packages, including Python, HTML, and SQLite3.
+
+Some commands for setup the environment:
+Setup virtual environment: `pipreqs . --force --ignore ".mypy_something,.venv"`
+Launch requirements: `pip install -r requirements.txt`
