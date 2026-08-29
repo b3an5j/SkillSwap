@@ -142,6 +142,7 @@ def discover():
 
     search = request.args.get("search", "").strip()
     category = request.args.get("category", "").strip()
+    category_list = get_post_categories()
 
     # Use FTS search when user types something
     if search:
@@ -154,7 +155,8 @@ def discover():
     return render_template("discover.html",
                            posts=posts,
                            search=search,
-                           category=category)
+                           category=category,
+                           category_list=category_list)
 
 
 @app.route("/me")
