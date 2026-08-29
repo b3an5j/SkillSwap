@@ -125,6 +125,28 @@ def delete_post(data):
         return False
 
 
+def get_post_by_id(id):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT p.title, p.description, pc.category, p.is_open, u.username
+            FROM posts p
+            JOIN post_category pc ON pc.id = p.category_id
+            JOIN users u ON p.owner = u.id
+            WHERE p.id = :id
+        """, { "id": id })
+        row = cur.fetchone()
+
+        return dict(row)
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return []
+
+
 def get_post_categories():
     try:
         conn = get_db()
@@ -244,6 +266,46 @@ def search_posts_relational(search="", category="", uid=None):
     return [dict(row) for row in rows]
 
 
+def get_sent_offers(uid):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT t.*
+            FROM trade_offers t
+            JOIN posts ps ON t.post_send = ps.id
+            WHERE ps.owner = :uid
+        """, { "uid": uid })
+        rows = cur.fetchall()
+        conn.close()
+        return rows
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return []
+
+
+def get_received_offers(uid):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT t.*
+            FROM trade_offers t
+            JOIN posts ps ON t.post_receive = ps.id
+            WHERE ps.owner = :uid
+        """, { "uid": uid })
+        rows = cur.fetchall()
+        conn.close()
+        return rows
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return []
+
+
 ### DB INIT
 def delete_db():
     try:
@@ -265,10 +327,16 @@ def populate_db():
         for user in DUMMY_DATA["users"]:
             cur.execute("INSERT INTO users VALUES (?,?,?,?,?)",
                         (user["id"], user["username"], user["email"], encrypt_pwd(user["password"]), user["location"]))
+
         for post in DUMMY_DATA["posts"]:
             cur.execute("""
                 INSERT INTO posts (owner, title, description, category_id, is_open) VALUES (:owner, :title, :description, :category_id, :is_open)
             """, post)
+
+        for offer in DUMMY_DATA["trade_offers"]:
+            cur.execute("""
+                INSERT INTO trade_offers VALUES (:post_send, :post_receive)
+            """, offer)
 
         conn.commit()
 
