@@ -142,21 +142,20 @@ def discover():
 
     search = request.args.get("search", "").strip()
     category = request.args.get("category", "").strip()
-    category_list = get_post_categories()
 
-    # Use FTS search when user types something
     if search:
         data = SearchData(uid=session["uid"], query=search)
         posts = search_posts(data)
     else:
-        # fallback: relational browsing
         posts = search_posts_relational(search="", category=category, uid=session["uid"])
+
+    categories = get_post_categories()   # ← ADD THIS
 
     return render_template("discover.html",
                            posts=posts,
                            search=search,
                            category=category,
-                           category_list=category_list)
+                           categories=categories)
 
 
 @app.route("/me")
@@ -170,10 +169,8 @@ def me():
     posts = get_my_posts(uid)
     categories = get_post_categories()
 
-    # sent_count = len(get_sent_offers(uid))
-    # received_count = len(get_received_offers(uid))
-    sent_count = 67
-    received_count = 69
+    sent_count = len(get_sent_offers(uid))
+    received_count = len(get_received_offers(uid))
 
     return render_template("me.html",
                            user=user,
@@ -226,12 +223,27 @@ def offer():
 
     uid = session["uid"]
 
-    # sent = get_sent_offers(uid)
-    # received = get_received_offers(uid)
-    sent = []
-    received = []
+    # Raw offers (just IDs)
+    raw_sent = get_sent_offers(uid)
+    raw_received = get_received_offers(uid)
 
-    tab = request.args.get("tab", "sent")  # default tab
+    # Enrich sent offers
+    sent = []
+    for o in raw_sent:
+        sent.append({
+            "post_send": get_post_by_id(o["post_send"]),
+            "post_receive": get_post_by_id(o["post_receive"])
+        })
+
+    # Enrich received offers
+    received = []
+    for o in raw_received:
+        received.append({
+            "post_send": get_post_by_id(o["post_send"]),
+            "post_receive": get_post_by_id(o["post_receive"])
+        })
+
+    tab = request.args.get("tab", "sent")
 
     return render_template("offer.html",
                            sent=sent,
