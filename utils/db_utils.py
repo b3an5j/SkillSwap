@@ -1,66 +1,15 @@
 import sqlite3
 import bcrypt
-from pathlib import Path
 from os import remove
+import re
+from utils.util_globals import *
 
-DB_PATH = "database/database.sqlite"
-SCHEMA_PATH = "database/schema.sql"
-DUMMY_DATA = [{
-  "username": "cplomer0",
-  "email": "gtrimnell0@people.com.cn",
-  "password": "gcrannach0",
-  "location": "Philippines"
-}, {
-  "username": "ltamas1",
-  "email": "rruilton1@tumblr.com",
-  "password": "apitson1",
-  "location": "Azerbaijan"
-}, {
-  "username": "csmallacombe2",
-  "email": "jcumbridge2@stanford.edu",
-  "password": "jdows2",
-  "location": "Japan"
-}, {
-  "username": "smoncrieffe3",
-  "email": "vmcgairl3@github.io",
-  "password": "jkefford3",
-  "location": "Indonesia"
-}, {
-  "username": "cjeffries4",
-  "email": "jsweet4@uiuc.edu",
-  "password": "bvaisey4",
-  "location": "South Africa"
-}, {
-  "username": "jbardell5",
-  "email": "kellerman5@sbwire.com",
-  "password": "msanbrook5",
-  "location": "Democratic Republic of the Congo"
-}, {
-  "username": "kkrzysztofiak6",
-  "email": "lsoutherton6@symantec.com",
-  "password": "bechallier6",
-  "location": "Argentina"
-}, {
-  "username": "kbinestead7",
-  "email": "ccorkan7@oracle.com",
-  "password": "lmccaig7",
-  "location": "Brazil"
-}, {
-  "username": "lhaskey8",
-  "email": "sdonoghue8@posterous.com",
-  "password": "hmcnicol8",
-  "location": "China"
-}, {
-  "username": "rsetter9",
-  "email": "khickenbottom9@unesco.org",
-  "password": "wfilinkov9",
-  "location": "Indonesia"
-}]
-
+### INITIAL DB SETUP
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     conn = None
@@ -83,6 +32,26 @@ def init_db():
             conn.close()
         return False
 
+
+def delete_db():
+    try:
+        remove(DB_PATH)
+        print(f"DB deleted successfully.")
+    except FileNotFoundError:
+        print(f"DB does not exist.")
+
+
+def populate_db():
+    for user in DUMMY_DATA:
+        insert_user(
+            user["username"],
+            user["email"],
+            user["password"],
+            user["location"]
+        )
+
+
+### POST
 def insert_post(data):
     conn = None
     try:
@@ -106,6 +75,7 @@ def insert_post(data):
             conn.rollback()
             conn.close()
         return False
+
 
 def update_post(data):
     conn = None
@@ -136,6 +106,7 @@ def update_post(data):
             conn.close()
         return False
 
+
 def delete_post(data):
     conn = None
     try:
@@ -160,6 +131,80 @@ def delete_post(data):
             conn.close()
         return False
 
+def search_posts(query, connection=None):
+    """Search and rank open posts using SQLite's FTS4 index.
+
+    Ranking happens in SQL with title, category ID, location, and description
+    as descending priorities.  FTS4 performs the candidate search; no Python
+    similarity calculation or sorting is used.
+    """
+    if not isinstance(query, str):
+        raise TypeError("query must be a string")
+
+    query = query.strip()
+    if not query:
+        return []
+
+    owns_connection = connection is None
+    conn = connection or get_db()
+    try:
+        rows = conn.execute(
+            """
+            WITH title_matches AS (
+                SELECT docid
+                FROM posts_search
+                WHERE posts_search MATCH
+                    ('title:' || replace(:query, ' ', ' title:'))
+            ),
+            category_matches AS (
+                SELECT docid
+                FROM posts_search
+                WHERE posts_search MATCH
+                    ('category:' || replace(:query, ' ', ' category:'))
+            ),
+            location_matches AS (
+                SELECT docid
+                FROM posts_search
+                WHERE posts_search MATCH
+                    ('location:' || replace(:query, ' ', ' location:'))
+            ),
+            description_matches AS (
+                SELECT docid
+                FROM posts_search
+                WHERE posts_search MATCH
+                    ('description:' || replace(:query, ' ', ' description:'))
+            ),
+            matching_posts AS (
+                SELECT docid FROM title_matches
+                UNION SELECT docid FROM category_matches
+                UNION SELECT docid FROM location_matches
+                UNION SELECT docid FROM description_matches
+            )
+            SELECT posts.id, posts.owner, posts.title, posts.description,
+                   post_category.category, posts.is_open, users.username,
+                   users.location,
+                   (CASE WHEN posts.id IN (SELECT docid FROM title_matches)
+                         THEN 1000 ELSE 0 END
+                    + CASE WHEN posts.id IN (SELECT docid FROM category_matches)
+                           THEN 100 ELSE 0 END
+                    + CASE WHEN posts.id IN (SELECT docid FROM location_matches)
+                           THEN 10 ELSE 0 END
+                    + CASE WHEN posts.id IN (SELECT docid FROM description_matches)
+                           THEN 1 ELSE 0 END) AS relevance
+            FROM matching_posts
+            JOIN post_category ON post_category.id = posts.category_id
+            JOIN posts ON posts.id = matching_posts.docid
+            JOIN users ON users.id = posts.owner
+            WHERE posts.is_open = 1
+            ORDER BY relevance DESC, posts.id ASC
+            """
+            , {"query": query}
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        if owns_connection:
+            conn.close()
+
 def delete_db():
     try:
         remove(DB_PATH)
@@ -178,35 +223,103 @@ def populate_db():
         )
 
 
+### REGISTRATION
 def encrypt_pwd(raw_pwd):
     salt = bcrypt.gensalt()
-    pwd = str(bcrypt.hashpw(raw_pwd.encode("utf-8"), salt))
+    pwd = bcrypt.hashpw(raw_pwd.encode("utf-8"), salt)
     return pwd
+
+
+def check_invalid_chars(username):
+    return not USERNAME_REGEX.match(username)
+
+
+def user_exists_by_username(username):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists
+
+def user_exists_by_email(email):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE email = ?", (email.lower(),))
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists
 
 
 def insert_user(uname, email, pwd, loc):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO users (username, email, password, location) VALUES (?, ?, ?, ?)",
+    # might remove
+    email = email.lower()
+    loc = loc.lower()
+
+    cursor.execute("""
+        INSERT INTO users (username, email, password, location) VALUES (?, ?, ?, ?)
+        """,
                    (uname, email, encrypt_pwd(pwd), loc))
 
     conn.commit()
     conn.close()
 
 
-# def check_user(uname, pwd):
-#     conn = get_db()
-#     cursor = conn.cursor()
+def get_pwd(uname, is_email=False):
+    conn = get_db()
+    cursor = conn.cursor()
 
-#     cursor.execute("SELECT * FROM users WHERE username = ?", (uname,))
+    if is_email:
+        cursor.execute("""
+            SELECT password FROM users WHERE email = ?
+            """,
+            (uname,)
+        )
+    else:
+        cursor.execute("""
+            SELECT password FROM users WHERE username = ?
+            """,
+            (uname,)
+        )
 
-#     for row in cursor.fetchall():
-#         for data in row:
-#             print(data)
-
-    
-    
-
-    conn.commit()
+    row = cursor.fetchone()
     conn.close()
+
+    if row is None:
+        return None  # no such user
+    return row[0] # hashed password
+
+
+def get_name(email):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT username FROM users WHERE email = ?
+        """,
+        (email,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        return None  # no such user
+    return row[0] # username
+
+
+def check_pwd(name, pwd):
+    if '@' in name:
+        name = name.lower()
+        hashed = get_pwd(name, is_email=True)
+    else:
+        hashed = get_pwd(name)
+
+    # User not found
+    if hashed is None:
+        return False
+
+    # Compare password
+    return bcrypt.checkpw(pwd.encode("utf-8"), hashed)
