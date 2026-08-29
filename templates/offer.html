@@ -80,9 +80,14 @@
             <div class="space-y-4">
                 {% for offer in received %}
                     <div class="border p-4 rounded-lg">
-                        <p><strong>You receive:</strong> {{ offer.post_send.title }}</p>
-                        <p><strong>I receive:</strong> {{ offer.post_receive.title }}</p>
+                        <p><strong>From:</strong> {{ offer.sender_name }}</p>
+                        <p><strong>Post:</strong> {{ offer.title }}</p>
+                        <p><strong>Message:</strong> {{ offer.message }}</p>
+                        <p><strong>Status:</strong> {{ offer.status }}</p>
 
+                        <img src = "/Users/quangduyvu1723/Downloads/46734.png" alt = "Deal Image" class = "w-32 h-32 object-cover mt-2">
+                        <img src = "/Users/quangduyvu1723/Downloads/6744032.png" alt = "Deal Image" class = "w-32 h-32 object-cover mt-2">
+                        <!-- ACCEPT + REJECT BUTTONS -->
                         <div class="mt-3 flex space-x-3">
                             <form action="/offer/accept/{{ offer.post_send.id }}/{{ offer.post_receive.id }}" method="POST">
                                 <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
@@ -90,11 +95,9 @@
                                 </button>
                             </form>
 
-                            <form action="/offer/reject/{{ offer.post_send.id }}/{{ offer.post_receive.id }}" method="POST">
-                                <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                                    Reject
-                                </button>
-                            </form>
+                            <button class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                Reject
+                            </button>
                         </div>
                     </div>
                 {% endfor %}
