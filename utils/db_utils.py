@@ -1,62 +1,10 @@
 import sqlite3
 import bcrypt
-from pathlib import Path
 from os import remove
+import re
+from utils.util_globals import *
 
-DB_PATH = "database/database.sqlite"
-SCHEMA_PATH = "database/schema.sql"
-DUMMY_DATA = [{
-  "username": "cplomer0",
-  "email": "gtrimnell0@people.com.cn",
-  "password": "gcrannach0",
-  "location": "Philippines"
-}, {
-  "username": "ltamas1",
-  "email": "rruilton1@tumblr.com",
-  "password": "apitson1",
-  "location": "Azerbaijan"
-}, {
-  "username": "csmallacombe2",
-  "email": "jcumbridge2@stanford.edu",
-  "password": "jdows2",
-  "location": "Japan"
-}, {
-  "username": "smoncrieffe3",
-  "email": "vmcgairl3@github.io",
-  "password": "jkefford3",
-  "location": "Indonesia"
-}, {
-  "username": "cjeffries4",
-  "email": "jsweet4@uiuc.edu",
-  "password": "bvaisey4",
-  "location": "South Africa"
-}, {
-  "username": "jbardell5",
-  "email": "kellerman5@sbwire.com",
-  "password": "msanbrook5",
-  "location": "Democratic Republic of the Congo"
-}, {
-  "username": "kkrzysztofiak6",
-  "email": "lsoutherton6@symantec.com",
-  "password": "bechallier6",
-  "location": "Argentina"
-}, {
-  "username": "kbinestead7",
-  "email": "ccorkan7@oracle.com",
-  "password": "lmccaig7",
-  "location": "Brazil"
-}, {
-  "username": "lhaskey8",
-  "email": "sdonoghue8@posterous.com",
-  "password": "hmcnicol8",
-  "location": "China"
-}, {
-  "username": "rsetter9",
-  "email": "khickenbottom9@unesco.org",
-  "password": "wfilinkov9",
-  "location": "Indonesia"
-}]
-
+### INITIAL DB SETUP
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -84,6 +32,7 @@ def init_db():
             conn.close()
         return False
 
+### POST
 def create_post(data):
     conn = None
     try:
@@ -107,6 +56,7 @@ def create_post(data):
             conn.rollback()
             conn.close()
         return False
+
 
 def update_post(data):
     conn = None
@@ -136,6 +86,7 @@ def update_post(data):
             conn.rollback()
             conn.close()
         return False
+
 
 def delete_post(data):
     conn = None
@@ -253,32 +204,103 @@ def populate_db():
         )
 
 
+### REGISTRATION
 def encrypt_pwd(raw_pwd):
     salt = bcrypt.gensalt()
-    pwd = str(bcrypt.hashpw(raw_pwd.encode("utf-8"), salt))
+    pwd = bcrypt.hashpw(raw_pwd.encode("utf-8"), salt)
     return pwd
+
+
+def check_invalid_chars(username):
+    return not USERNAME_REGEX.match(username)
+
+
+def user_exists_by_username(username):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists
+
+def user_exists_by_email(email):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT 1 FROM users WHERE email = ?", (email.lower(),))
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists
 
 
 def insert_user(uname, email, pwd, loc):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("INSERT INTO users (username, email, password, location) VALUES (?, ?, ?, ?)",
+    # might remove
+    email = email.lower()
+    loc = loc.lower()
+
+    cursor.execute("""
+        INSERT INTO users (username, email, password, location) VALUES (?, ?, ?, ?)
+        """,
                    (uname, email, encrypt_pwd(pwd), loc))
 
     conn.commit()
     conn.close()
 
 
-# def check_user(uname, pwd):
-#     conn = get_db()
-#     cursor = conn.cursor()
+def get_pwd(uname, is_email=False):
+    conn = get_db()
+    cursor = conn.cursor()
 
-#     cursor.execute("SELECT * FROM users WHERE username = ?", (uname,))
+    if is_email:
+        cursor.execute("""
+            SELECT password FROM users WHERE email = ?
+            """,
+            (uname,)
+        )
+    else:
+        cursor.execute("""
+            SELECT password FROM users WHERE username = ?
+            """,
+            (uname,)
+        )
 
-#     for row in cursor.fetchall():
-#         for data in row:
-#             print(data)
+    row = cursor.fetchone()
+    conn.close()
 
-#     conn.commit()
-#     conn.close()
+    if row is None:
+        return None  # no such user
+    return row[0] # hashed password
+
+
+def get_name(email):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT username FROM users WHERE email = ?
+        """,
+        (email,)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if row is None:
+        return None  # no such user
+    return row[0] # username
+
+
+def check_pwd(name, pwd):
+    if '@' in name:
+        name = name.lower()
+        hashed = get_pwd(name, is_email=True)
+    else:
+        hashed = get_pwd(name)
+
+    # User not found
+    if hashed is None:
+        return False
+
+    # Compare password
+    return bcrypt.checkpw(pwd.encode("utf-8"), hashed)
