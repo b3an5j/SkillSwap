@@ -20,6 +20,13 @@ CREATE TABLE IF NOT EXISTS posts (
 	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1))
 );
 
+CREATE TABLE IF NOT EXISTS trade_offers (
+	post_send integer NOT NULL REFERENCES posts(id),
+	post_receive integer NOT NULL REFERENCES posts(id),
+	PRIMARY KEY (post_send, post_receive),
+	CHECK (post_send != post_receive)
+);
+
 CREATE VIRTUAL TABLE IF NOT EXISTS posts_fts USING fts5(
     title,
     description,
