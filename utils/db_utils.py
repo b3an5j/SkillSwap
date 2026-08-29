@@ -278,7 +278,7 @@ def get_sent_offers(uid):
         """, { "uid": uid })
         rows = cur.fetchall()
         conn.close()
-        return rows
+        return [dict(row) for row in rows]
     except:
         if conn:
             conn.rollback()
@@ -298,7 +298,7 @@ def get_received_offers(uid):
         """, { "uid": uid })
         rows = cur.fetchall()
         conn.close()
-        return rows
+        return [dict(row) for row in rows]
     except:
         if conn:
             conn.rollback()
