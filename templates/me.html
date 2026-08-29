@@ -110,6 +110,11 @@
     </div>
 </div>
 
+<!-- Success Box -->
+<div id="success-box"
+     class="fixed bottom-4 right-4 text-white px-4 py-3 rounded shadow hidden">
+</div>
+
 <script>
 let currentEditId = null;
 
@@ -177,12 +182,12 @@ async function saveEdit() {
         document.querySelector(`#post-${currentEditId} .post-title`).innerText = title;
         document.querySelector(`#post-${currentEditId} .post-description`).innerText = description;
 
-        // Update category text
         const selectedText = document.getElementById("edit-category")
                                    .selectedOptions[0].text;
         document.querySelector(`#post-${currentEditId} .post-category`).innerText = selectedText;
 
         closeEditModal();
+        showSuccess("Post updated!", "green");
     } else {
         alert("Failed to update post");
     }
@@ -197,10 +202,41 @@ async function deletePost(id) {
     const data = await res.json();
     if (data.ok) {
         document.getElementById(`post-${id}`).remove();
+        showSuccess("Post deleted!", "red");
     } else {
         alert("Failed to delete post");
     }
 }
+
+// Success box
+function showSuccess(message, color = "green") {
+    const box = document.getElementById("success-box");
+    box.innerText = message;
+
+    // Reset classes
+    box.className = "fixed bottom-4 right-4 text-white px-4 py-3 rounded shadow";
+
+    // Apply color
+    if (color === "red") {
+        box.classList.add("bg-red-600");
+    } else {
+        box.classList.add("bg-green-600");
+    }
+
+    box.classList.remove("hidden");
+
+    setTimeout(() => {
+        box.classList.add("hidden");
+    }, 3000);
+}
+
+// Show "Post created!" on page load
+window.addEventListener("DOMContentLoaded", () => {
+    const created = new URLSearchParams(window.location.search).get("created");
+    if (created) {
+        showSuccess("Post created!", "green");
+    }
+});
 </script>
 
 </body>
