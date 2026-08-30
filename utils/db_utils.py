@@ -364,31 +364,17 @@ def accept_offer(data):
             WHERE id = :post_receive
         """, data)
 
-        # CLOSE RECEIVER'S POST
-        cur.execute("""
-            UPDATE posts
-            SET is_open = 0
-            WHERE id = :post_receive
-        """, data)
+        # CLOSE BOTH POSTS
+        cur.execute("UPDATE posts SET is_open = 0 WHERE id = :post_receive", data)
+        cur.execute("UPDATE posts SET is_open = 0 WHERE id = :post_send", data)
 
-        # CLOSE SENDER'S POST
-        cur.execute("""
-            UPDATE posts
-            SET is_open = 0
-            WHERE id = :post_send
-        """, data)
-
-        # DELETE all other offers involving the receiver's post
+        # DELETE ALL OTHER OFFERS INVOLVING EITHER POST
         cur.execute("""
             DELETE FROM trade_offers
-            WHERE post_receive = :post_receive
-              AND NOT (post_send = :post_send AND post_receive = :post_receive)
-        """, data)
-
-        # DELETE all other offers involving the sender's post
-        cur.execute("""
-            DELETE FROM trade_offers
-            WHERE post_send = :post_send
+            WHERE (post_send = :post_send
+                   OR post_send = :post_receive
+                   OR post_receive = :post_send
+                   OR post_receive = :post_receive)
               AND NOT (post_send = :post_send AND post_receive = :post_receive)
         """, data)
 
