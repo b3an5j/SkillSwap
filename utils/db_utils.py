@@ -85,7 +85,7 @@ def update_post(data):
                 description = :description,
                 category_id = :category_id,
                 is_open = :is_open
-            WHERE id = :post_id
+            WHERE id = :post_id AND receive_accepted = 0
         """, data)
 
         conn.commit()
@@ -109,7 +109,7 @@ def delete_post(data):
 
         cur.execute("""
             DELETE FROM posts
-            WHERE id = :post_id AND owner = :uid
+            WHERE id = :post_id AND owner = :uid AND receive_accepted = 0
         """, {"post_id": data["post_id"], "uid": data["uid"]})
 
         conn.commit()
@@ -171,7 +171,7 @@ def get_my_posts(uid):
 
     cur.execute("""
         SELECT posts.id, posts.title, posts.description,
-               post_category.category AS category, posts.is_open
+               post_category.category AS category, posts.is_open, posts.receive_accepted
         FROM posts
         JOIN post_category ON post_category.id = posts.category_id
         WHERE posts.owner = :uid
@@ -345,7 +345,7 @@ def accept_offer(data):
         cur = conn.cursor()
         cur.execute("""
             UPDATE trade_offers
-            SET status = :status
+            SET status = 1
             WHERE post_send = :post_send AND post_receive = :post_receive
         """, data)
         cur.execute("""
