@@ -140,7 +140,7 @@ def discover():
     if "uid" not in session:
         return redirect("/login")
 
-    my_posts = get_my_posts(session["uid"])
+    my_posts = [p for p in get_my_posts(session["uid"]) if p["receive_accepted"] == 0]
     search = request.args.get("search", "").strip()
     category = request.args.get("category", "").strip()
 
