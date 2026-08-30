@@ -425,7 +425,7 @@ def populate_db():
 
         for offer in DUMMY_DATA["trade_offers"]:
             cur.execute("""
-                INSERT INTO trade_offers VALUES (:post_send, :post_receive)
+                INSERT INTO trade_offers (post_send, post_receive) VALUES (:post_send, :post_receive)
             """, offer)
 
         conn.commit()

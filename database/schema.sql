@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS posts (
 	description text NOT NULL,
 	category_id integer NOT NULL REFERENCES post_category(id) ON DELETE CASCADE,
 	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1)),
-	receive_accepted integer NOT NULL DEFAULT 0 CHECK (offers >= 0)
+	receive_accepted integer NOT NULL DEFAULT 0 CHECK (receive_accepted >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS trade_offers (
