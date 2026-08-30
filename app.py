@@ -229,33 +229,20 @@ def offer():
     raw_sent = get_sent_offers(uid)
     raw_received = get_received_offers(uid)
 
-    # Helper to enrich a post with full info
-    def enrich(post_id):
-        post = get_post_by_id(post_id)  # MUST return title, description, category, location, owner
-        return {
-            "id": post_id,
-            "title": post["title"],
-            "description": post["description"],
-            "category": post["category"],
-            "location": post["location"],
-            "owner": post["owner"],
-            "username": post["username"]  # if your query includes username
-        }
-
     # ENRICH SENT OFFERS
     sent = []
     for o in raw_sent:
         sent.append({
-            "post_send": enrich(o["post_send"]),
-            "post_receive": enrich(o["post_receive"])
+            "post_send": enrich_post(o["post_send"]),
+            "post_receive": enrich_post(o["post_receive"])
         })
 
     # ENRICH RECEIVED OFFERS
     received = []
     for o in raw_received:
         received.append({
-            "post_send": enrich(o["post_send"]),
-            "post_receive": enrich(o["post_receive"])
+            "post_send": enrich_post(o["post_send"]),
+            "post_receive": enrich_post(o["post_receive"])
         })
 
     tab = request.args.get("tab", "sent")
@@ -289,12 +276,63 @@ def offer_delete_route():
     if "uid" not in session:
         return redirect("/login")
 
-    post_send = int(request.form["post_send"])
-    post_receive = int(request.form["post_receive"])
+    data = {
+        "post_send": int(request.form["post_send"]),
+        "post_receive": int(request.form["post_receive"]),
+        "uid": session["uid"]
+    }
 
-    delete_offer(post_send, post_receive, session["uid"])
+    delete_offer(data)
 
     return redirect("/offer?tab=sent")
+
+
+@app.route("/offer/accept", methods=["POST"])
+def offer_accept_route():
+    if "uid" not in session:
+        return redirect("/login")
+
+    data = {
+        "post_send": int(request.form["post_send"]),
+        "post_receive": int(request.form["post_receive"]),
+        "uid": session["uid"]
+    }
+
+    accept_offer(data)
+    return redirect("/offer?tab=received")
+
+
+@app.route("/offer/reject", methods=["POST"])
+def offer_reject_route():
+    if "uid" not in session:
+        return redirect("/login")
+
+    data = {
+        "post_send": int(request.form["post_send"]),
+        "post_receive": int(request.form["post_receive"]),
+        "uid": session["uid"]
+    }
+
+    delete_offer(data)
+    return redirect("/offer?tab=received")
+
+
+@app.route("/accepted")
+def accepted():
+    if "uid" not in session:
+        return redirect("/login")
+
+    uid = session["uid"]
+    raw = get_accepted_offers(uid)
+
+    accepted_list = []
+    for o in raw:
+        accepted_list.append({
+            "post_send": enrich_post(o["post_send"]),
+            "post_receive": enrich_post(o["post_receive"])
+        })
+
+    return render_template("accepted.html", accepted=accepted_list)
 
 
 delete_db()

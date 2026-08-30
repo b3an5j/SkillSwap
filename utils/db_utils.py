@@ -137,7 +137,8 @@ def get_post_by_id(post_id):
                post_category.category,
                posts.owner,
                users.username,
-               users.location
+               users.location,
+               posts.is_open
         FROM posts
         JOIN post_category ON post_category.id = posts.category_id
         JOIN users ON users.id = posts.owner
@@ -301,16 +302,21 @@ def get_received_offers(uid):
     try:
         conn = get_db()
         cur = conn.cursor()
+
         cur.execute("""
             SELECT t.*
             FROM trade_offers t
             JOIN posts ps ON t.post_receive = ps.id
             WHERE ps.owner = :uid
+              AND t.status = 0
         """, { "uid": uid })
+
         rows = cur.fetchall()
         conn.close()
         return [dict(row) for row in rows]
-    except:
+
+    except Exception as e:
+        print("GET RECEIVED OFFERS ERROR:", e)
         if conn:
             conn.rollback()
             conn.close()
@@ -343,29 +349,63 @@ def accept_offer(data):
     try:
         conn = get_db()
         cur = conn.cursor()
+
+        # Mark offer as accepted
         cur.execute("""
             UPDATE trade_offers
             SET status = 1
             WHERE post_send = :post_send AND post_receive = :post_receive
         """, data)
+
+        # Increment accepted count for the receiver
         cur.execute("""
             UPDATE posts
             SET receive_accepted = receive_accepted + 1
             WHERE id = :post_receive
         """, data)
-        conn.commit()
 
+        # CLOSE RECEIVER'S POST
+        cur.execute("""
+            UPDATE posts
+            SET is_open = 0
+            WHERE id = :post_receive
+        """, data)
+
+        # CLOSE SENDER'S POST
+        cur.execute("""
+            UPDATE posts
+            SET is_open = 0
+            WHERE id = :post_send
+        """, data)
+
+        # DELETE all other offers involving the receiver's post
+        cur.execute("""
+            DELETE FROM trade_offers
+            WHERE post_receive = :post_receive
+              AND NOT (post_send = :post_send AND post_receive = :post_receive)
+        """, data)
+
+        # DELETE all other offers involving the sender's post
+        cur.execute("""
+            DELETE FROM trade_offers
+            WHERE post_send = :post_send
+              AND NOT (post_send = :post_send AND post_receive = :post_receive)
+        """, data)
+
+        conn.commit()
         cur.close()
         conn.close()
         return True
-    except:
+
+    except Exception as e:
+        print("ACCEPT OFFER ERROR:", e)
         if conn:
             conn.rollback()
             conn.close()
         return False
 
 
-def delete_offer(post_send, post_receive, uid):
+def delete_offer(data):
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -374,14 +414,12 @@ def delete_offer(post_send, post_receive, uid):
             DELETE FROM trade_offers
             WHERE post_send = :post_send
               AND post_receive = :post_receive
-              AND post_send IN (
-                  SELECT id FROM posts WHERE owner = :uid
+              AND (
+                  post_send IN (SELECT id FROM posts WHERE owner = :uid)
+                  OR
+                  post_receive IN (SELECT id FROM posts WHERE owner = :uid)
               )
-        """, {
-            "post_send": post_send,
-            "post_receive": post_receive,
-            "uid": uid
-        })
+        """, data)
 
         conn.commit()
         cur.close()
@@ -570,3 +608,36 @@ def check_pwd(name, pwd):
 
     # Compare password
     return bcrypt.checkpw(pwd.encode("utf-8"), hashed)
+
+
+def enrich_post(post_id):
+    post = get_post_by_id(post_id)
+
+    return {
+        "id": post_id,
+        "title": post["title"],
+        "description": post["description"],
+        "category": post["category"],
+        "location": post["location"],
+        "owner": post["owner"],
+        "username": post["username"],
+        "is_open": post["is_open"]
+    }
+
+
+def get_accepted_offers(uid):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT post_send, post_receive
+        FROM trade_offers
+        WHERE status = 1
+          AND post_receive IN (
+              SELECT id FROM posts WHERE owner = :uid
+          )
+    """, {"uid": uid})
+
+    rows = cur.fetchall()
+    conn.close()
+    return rows

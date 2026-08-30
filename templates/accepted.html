@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Accepted Trades</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+
+<!-- Navbar -->
+<nav class="bg-white shadow p-4 flex justify-between items-center">
+    <a href="/discover" class="text-xl font-bold hover:underline">SkillSwap</a>
+    <div class="space-x-4">
+        <a href="/me" class="text-gray-700 hover:underline">{{ session["user"] }}</a>
+        <a href="/logout" class="text-blue-600 hover:underline">Logout</a>
+    </div>
+</nav>
+
+<!-- Main Card -->
+<div class="max-w-3xl mx-auto mt-8 bg-white p-6 rounded-lg shadow">
+
+    <h1 class="text-3xl font-bold mb-6 text-center">Accepted Trades</h1>
+
+    {% if accepted|length == 0 %}
+        <p class="text-gray-600 text-center">You haven't accepted any trades yet.</p>
+
+    {% else %}
+        <div class="space-y-6">
+
+            {% for offer in accepted %}
+                <div class="border p-5 rounded-lg shadow-sm bg-gray-50">
+
+                    <!-- Header -->
+                    <div class="mb-4">
+                        <span class="text-green-700 font-bold text-xl">Trade Accepted</span>
+                    </div>
+
+                    <!-- You Received -->
+                    <div class="mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">You Received:</h2>
+                        <p class="text-xl font-semibold">{{ offer.post_send.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_send.description }}</p>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Category: {{ offer.post_send.category }} |
+                            Location: {{ offer.post_send.location }}
+                        </p>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <!-- You Gave -->
+                    <div class="mt-4">
+                        <h2 class="text-lg font-bold text-gray-800">You Gave:</h2>
+                        <p class="text-xl font-semibold">{{ offer.post_receive.title }}</p>
+                        <p class="text-gray-700">{{ offer.post_receive.description }}</p>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Category: {{ offer.post_receive.category }} |
+                            Location: {{ offer.post_receive.location }}
+                        </p>
+                    </div>
+
+                </div>
+            {% endfor %}
+
+            <!-- Back to Offers -->
+            <div class="text-center mt-8">
+                <a href="/offer?tab=received"
+                   class="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-bold hover:bg-blue-700 transition inline-block">
+                    ← Back to Offers
+                </a>
+            </div>
+
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
