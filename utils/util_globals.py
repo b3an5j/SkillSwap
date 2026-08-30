@@ -3,6 +3,10 @@ import re
 USERNAME_REGEX = re.compile(r"^[A-Za-z0-9_]+$")
 DB_PATH = "database/database.sqlite"
 SCHEMA_PATH = "database/schema.sql"
+STATUS_TYPE = [
+  "Pending",
+  "Accepted"
+]
 DUMMY_DATA = {
   "post_category": [
     { "id": 1, "category": "music" },

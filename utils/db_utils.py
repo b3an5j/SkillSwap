@@ -225,7 +225,7 @@ def search_posts(data):
             AND p.id NOT IN (
                 SELECT t.post_receive FROM trade_offers t
                 JOIN posts ps ON t.post_send = ps.id
-                WHERE p.owner = :uid
+                WHERE ps.owner = :uid
             )
             ORDER BY rank ASC;
             """
@@ -326,6 +326,32 @@ def send_offer(data):
             SELECT posts.id, :post_receive
             FROM posts
             WHERE posts.id = :post_send AND posts.owner = :uid
+        """, data)
+        conn.commit()
+
+        cur.close()
+        conn.close()
+        return True
+    except:
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
+
+
+def accept_offer(data):
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE trade_offers
+            SET status = :status
+            WHERE post_send = :post_send AND post_receive = :post_receive
+        """, data)
+        cur.execute("""
+            UPDATE posts
+            SET receive_accepted = receive_accepted + 1
+            WHERE id = :post_receive
         """, data)
         conn.commit()
 

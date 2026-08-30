@@ -17,12 +17,14 @@ CREATE TABLE IF NOT EXISTS posts (
 	title text NOT NULL,
 	description text NOT NULL,
 	category_id integer NOT NULL REFERENCES post_category(id) ON DELETE CASCADE,
-	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1))
+	is_open integer NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1)),
+	receive_accepted integer NOT NULL DEFAULT 0 CHECK (offers >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS trade_offers (
-	post_send integer NOT NULL REFERENCES posts(id),
-	post_receive integer NOT NULL REFERENCES posts(id),
+	post_send integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+	post_receive integer NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+	status integer NOT NULL DEFAULT 0,
 	PRIMARY KEY (post_send, post_receive),
 	CHECK (post_send != post_receive)
 );
